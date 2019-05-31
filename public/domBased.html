@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>首页</title>
+    </head>
+    <body>
+        <!--该页面实现通过将输入框中的值作为图片的url-->
+        <input type="text" id="web" /> <button id="add">添加图片</button>
+        <div class="box"></div>
+        <script src="/node_modules/jquery/dist/jquery.js"></script>
+        <script>
+            // 不基于后端， 基于DOM，通过修改属性、插入内容、document.write    
+            // 改变结构后造成攻击
+            // 攻击的内容成为xss payload           
+            $("#add").on('click', function() {
+                // <img src="" onerror="alert(1)" id=""/>
+                // " onerror="alert(1)" id="
+                // <img src=""><script>alert(1)<\/script>"">   
+                // "><script>alert(1)<\/script>"
+                //  $(".box").html(`<img src=${$('#web').val()} />`) -----该行代码会产生xss攻击
+                $(".box").html(`<img src=${encodeURI($('#web').val())} />`)
+            })
+        </script>
+    </body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>登录页面</title>
+    <link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.css">
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <div class="panel panel-danger">
+                    <div class="panel panel-heading">
+                        <h2>登录页面</h2>
+                    </div>
+                    <div class="panel panel-body">
+                        <form onsubmit="login(event)">
+                            <div class="form-group">
+                                <label class="control-label" for="username">用户名</label>
+                                <input class="form-control" type="text" id="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="password">密码</label>
+                                <input class="form-control" type="password" id="password">
+                            </div>
+                            <div class="form-group">
+                                <input type="submit" class="btn btn-primary" value="登录"／>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/node_modules/jquery/dist/jquery.js"></script>
+    <script>
+        function login(e) {
+            e.preventDefault();
+            let username = $('#username').val();
+            let password = $("#password").val();
+            $.post('/api/login',{username, password}).then(res => {
+                if(res.code === 0) {
+                    // 期望在该页面实现通过url传参并在页面显示url所传的参数的功能
+                    // location.href='/welcome'; // 本质上是一个get请求----------反射型示例
+                    location.href = "/welcome"; // -----测试DOM-Based型
+                } else {
+                    alert(res.errMsg);
+                }
+            })
+        }
+    </script>
+    
+</body>
+</html>
