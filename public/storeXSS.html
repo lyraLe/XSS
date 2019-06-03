@@ -36,20 +36,29 @@
     </div>
     <script src="/node_modules/jquery/dist/jquery.js"></script>
     <script>
+        function encodeHtml(str) {
+            str.replace(/&/g, '&amp;').
+            replace(/'/g, '&quot;').
+            replace(/"/g, '&apos;').
+            replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        }
         function getList() {
             let html = '';
             $.get('/api/comments').then(result => {
                 const { comments:records } = result
                 records.forEach(record => {
-                    html+=`<li class="list-group-item">${record.username}: ${record.content}</li>`
+                    html+=`<li class="list-group-item">${record.username}: ${encodeHtml(record.content)}</li>`
                 })
                 $(".list-group").html(html);
             })
         }
         getList();
+
         function addComment(e) {
             e.preventDefault();
-            $.post('/api/addComment', {content: $("#content").val()}).then(res => {
+            const content = $("#content").val();
+            // $.post('/api/addComment', {content).then(res => { // 该行会发生XSS攻击
+            $.post('/api/addComment', {content: encodeHtml(content)}).then(res => {
                 if(res.code === 1) { // 用户未登录
                     location.href = '/login.html'; 
                 } else {
