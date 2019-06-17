@@ -17,10 +17,12 @@ app.use(cookieParser());
 // 伪造已注册用户
 let userLists = [{
     username: 'zfpx',
-    password: 'zfpx'
+    password: 'zfpx',
+    money: 20
 }, {
     username: 'lyra',
-    password: 'lyra'
+    password: 'lyra',
+    money: 10000
 }];
 
 let COOKIE_ID = "connect.sid";
@@ -32,7 +34,7 @@ app.post('/api/login', function(req, res) {
     if(existedUser) {
         // 用户登录成功后返回客户端一个登录成功信息
         const userId = Math.random() + Date.now(); // 唯一标识信息
-        cookies[userId] = existedUser; // {110d***: {username: '', password: ''}}
+        cookies[userId] = existedUser; // {110d***: {username: '', password: '', money: ''}}
         res.cookie(COOKIE_ID, userId, {httpOnly: false}); // 防止通过document.cookied获取cookie
         res.json({code: 0});
     } else {
@@ -77,6 +79,34 @@ app.post('/api/addComment', function(req, res) {
     } else {
         res.json({code: 1, error: '用户未登录'})
     }  
+})
+
+// 转账页面获取用户信息
+app.get('/api/userinfo', function(req, res) {
+    const user = cookies[req.cookies[COOKIE_ID]] || {};
+    if (user.username) {
+        res.json({code: 0, userinfo: {username: user.username, money: user.money}});
+    } else {
+        res.json({code: 1, error: '用户未登录'})
+    }
+})
+// 转账操作
+app.post('/api/transfer', function(req, res) {
+    const { target, balance } = req.body;
+    const user = cookies[req.cookies[COOKIE_ID]] || {};
+    if (user.username) {
+        userLists.forEach(item => {
+            if(item.username === user.username) {
+                item.money -= (+balance);
+            }
+            if(item.username === target) {
+                item.money += (+balance);
+            }
+        })
+        res.json({code: 0})
+    } else {
+        res.json({code: 1, error: "用户未登录"})
+    }
 })
 app.listen(3000)
 
