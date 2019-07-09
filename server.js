@@ -4,6 +4,8 @@ let express = require('express');
 let path = require('path');
 let bodyParser = require('body-parser');
 let cookieParser = require('cookie-parser');
+// 引入验证码生成插件
+let svgCaptcha = require('svg-captcha');
 
 
 let app = express();
@@ -67,8 +69,8 @@ let comments = [{
 app.get('/api/comments', function(req, res){
     res.json({code: 0, comments})
 })
-// 发表评论
 
+// 发表评论
 // XSS存储型 恶意脚本存储到服务器上，所有人访问都会造成攻击；比反射型，DOM-Based危害范围都大
 app.post('/api/addComment', function(req, res) {
     let reqCookie = req.cookies[COOKIE_ID];
@@ -84,27 +86,57 @@ app.post('/api/addComment', function(req, res) {
 // 转账页面获取用户信息
 app.get('/api/userinfo', function(req, res) {
     const user = cookies[req.cookies[COOKIE_ID]] || {};
+    // 其中data是svg内容，text是验证码文本内容；因为转账前，页面会请求该接口，则可在此生成验证码给页面
+    const { data, text } = svgCaptcha.create();
+    user.text = text; // 
     if (user.username) {
-        res.json({code: 0, userinfo: {username: user.username, money: user.money}});
+        res.json({
+            code: 0, 
+            userinfo: {
+                username: user.username, 
+                money: user.money,
+                svg: data
+            }
+        });
     } else {
         res.json({code: 1, error: '用户未登录'})
     }
 })
+// 为了避免CSRF攻击，现在常用的方法有
+/*
+1. 验证码（其实最大的用处用来解决并发量；如12306）,对于预防CSRF用户体验不好
+2. 判断来源（refer） 如： 从3001发起的请求，但是请求的是3000的接口 
+3. token
+*/
 // 转账操作
 app.post('/api/transfer', function(req, res) {
-    const { target, balance } = req.body;
+    const { target, balance, code, token } = req.body;
     const user = cookies[req.cookies[COOKIE_ID]] || {};
+
     if (user.username) {
-        userLists.forEach(item => {
-            if(item.username === user.username) {
-                item.money -= (+balance);
+        if((req.headers['referer'] || []).includes('http://localhost: 3000')) {// 判断来源
+            if ('my_' + req.cookies[COOKIE_ID] === token) {// token
+                if (user.text === code) { // 验证码
+                    userLists.forEach(item => {
+                        if(item.username === user.username) {
+                            item.money -= (+balance);
+                        }
+                        if(item.username === target) {
+                            item.money += (+balance);
+                        }
+                    })
+                    res.json({code: 0})            
+                } else {
+                    res.json({code: 1, error: '验证码不正确'})
+                }
+            } else {
+                res.json({code: 1, error: "令牌不对"})
             }
-            if(item.username === target) {
-                item.money += (+balance);
-            }
-        })
-        res.json({code: 0})
-    } else {
+        } else {
+            res.json({code: 1, error: '数据来源不对，被攻击了'})
+        }
+    } 
+    else {
         res.json({code: 1, error: "用户未登录"})
     }
 })
